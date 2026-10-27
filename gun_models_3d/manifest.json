@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "basePath": "gun_models_3d/",
+  "scannedAt": "2026-06-08",
+  "supportedFormats": [".glb", ".gltf", ".fbx", ".obj"],
+  "models": [
+    { "file": "Pistol.glb", "weaponId": "pistol", "format": "glb" },
+    { "file": "Revolver.glb", "weaponId": "revolver", "format": "glb" },
+    { "file": "smg.glb", "weaponId": "smg", "format": "glb" },
+    { "file": "Assault Rifle.glb", "weaponId": "ar", "format": "glb" },
+    { "file": "burst rifle.glb", "weaponId": "burstRifle", "format": "glb" },
+    { "file": "Shotgun.glb", "weaponId": "shotgun", "format": "glb" },
+    { "file": "combat shotgun.glb", "weaponId": "combatSG", "format": "glb" },
+    { "file": "Sniper Rifle.glb", "weaponId": "sniper", "format": "glb" },
+    { "file": "lmg.glb", "weaponId": "lmg", "format": "glb" },
+    { "file": "plasma rifle.glb", "weaponId": "plasma", "format": "glb" }
+  ]
+}

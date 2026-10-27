@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DEAD ZONE — Lobby</title>
+<link rel="stylesheet" href="lobby/lobby.css">
+</head>
+<body>
+
+<!-- ── Top bar: brand · profile · wallet ─────────────────────────────── -->
+<header class="topbar">
+  <div class="brand">DEAD ZONE<small>SURVIVAL LOBBY</small></div>
+  <div class="profile">
+    <b id="profileName">Survivor</b>
+    <div id="profileSub">Matches 0 · Best Wave 0</div>
+  </div>
+  <div class="wallet">
+    <div class="coin coins">
+      <span class="sym">⛃</span>
+      <div><small>COINS</small><div class="amt" id="coinAmt">0</div></div>
+    </div>
+    <div class="coin rs">
+      <span class="sym">₹</span>
+      <div><small>RS · REAL MONEY</small><div class="amt" id="rsAmt">0</div></div>
+      <button class="plus" title="Get Rs" onclick="Lobby.openRsShop()">＋</button>
+    </div>
+  </div>
+</header>
+
+<!-- ── Tab navigation (built by lobby.js) ────────────────────────────── -->
+<nav class="tabs" id="tabs"></nav>
+
+<!-- ── Active view (rendered by lobby.js) ────────────────────────────── -->
+<main class="view" id="view"></main>
+
+<div id="toast"></div>
+
+<!-- Load order matters: data → account → bridge → controller -->
+<script src="lobby/data.js?v=2.3"></script>
+<script src="lobby/account.js?v=2.3"></script>
+<script src="lobby/bridge.js?v=2.3"></script>
+<script src="lobby/lobby.js?v=2.3"></script>
+</body>
+</html>

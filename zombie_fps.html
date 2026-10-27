@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DEAD ZONE — Zombie Survival FPS</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:'Courier New',monospace;user-select:none;color:#fff}
+#c{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:none}
+#ov{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:5}
+#ui{position:fixed;inset:0;pointer-events:none;z-index:10}
+#ui.off .hudp{display:none}
+.panel{background:rgba(0,0,0,.62);border:1px solid rgba(255,34,0,.45);padding:8px 14px}
+.lbl{font-size:9px;color:#ff6644;letter-spacing:2px;text-transform:uppercase}
+.val{font-size:20px;color:#fff;font-weight:bold}
+.bar{height:7px;background:rgba(255,255,255,.12);border-radius:3px;margin-top:3px;overflow:hidden}
+.bfill{height:100%;border-radius:3px;transition:width .3s ease-out}
+.hp{position:absolute;bottom:18px;left:18px;min-width:210px}
+.weaponhud{position:absolute;bottom:18px;right:18px;text-align:right;min-width:230px}
+.slots{display:flex;gap:4px;justify-content:flex-end;margin-top:6px}
+.slot{font-size:10px;padding:2px 6px;border:1px solid #444;color:#888}
+.slot.on{border-color:#88ffcc;color:#88ffcc;background:rgba(136,255,204,.12)}
+.topcenter{position:absolute;top:14px;left:50%;transform:translateX(-50%);text-align:center}
+.topright{position:absolute;top:14px;right:14px;text-align:right}
+.topleft{position:absolute;top:14px;left:14px}
+#mm{display:block;margin-top:6px;width:160px;height:160px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.5)}
+#feed{margin-top:8px;display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+#feed div{font-size:11px;background:rgba(0,0,0,.55);padding:3px 8px;border-left:2px solid #ff4422;transition:opacity .5s}
+#pus{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px auto 0;max-width:560px}
+#pus .pu{font-size:11px;padding:3px 8px;border:1px solid;background:rgba(0,0,0,.6);font-weight:bold;white-space:nowrap}
+#bossbar{position:absolute;top:118px;left:50%;transform:translateX(-50%);width:440px;display:none;text-align:center}
+#bossbar .bar{height:10px;border:1px solid #ff3300}
+#team{position:absolute;bottom:138px;left:18px;display:none;min-width:210px}
+#team .tm{display:flex;align-items:center;gap:8px;font-size:11px;margin:3px 0}
+#team .tm .bar{flex:1;margin:0}
+#reloadB{position:absolute;bottom:140px;right:18px;width:200px;display:none}
+.rtrack{height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;margin-top:4px}
+.rfill{height:100%;background:#ff8800;width:0}
+#dmgV,#healV,#lowHPV,#flashV{position:absolute;inset:0;opacity:0;pointer-events:none}
+#dmgV{background:radial-gradient(ellipse,transparent 50%,rgba(255,0,0,.45) 100%);transition:opacity .3s}
+#healV{background:radial-gradient(ellipse,transparent 50%,rgba(0,255,100,.3) 100%);transition:opacity .6s}
+#lowHPV{background:radial-gradient(ellipse,transparent 52%,rgba(160,0,0,.42) 100%)}
+#lowHPV.on{animation:lowHp 1.4s ease-in-out infinite}
+#flashV{background:#fff;transition:opacity .8s}
+@keyframes lowHp{0%,100%{opacity:.22}50%{opacity:.5}}
+#wave{position:absolute;top:26%;left:50%;transform:translateX(-50%);text-align:center;opacity:0;transition:opacity .4s;white-space:nowrap}
+.wt{font-size:44px;color:#ff2200;font-weight:900;letter-spacing:6px;text-shadow:0 0 30px #ff2200}
+.ws{font-size:15px;color:#ff9977;letter-spacing:3px;margin-top:6px}
+#downO{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);text-align:center;display:none}
+#toast{position:fixed;top:20%;left:50%;transform:translate(-50%,16px);opacity:0;visibility:hidden;pointer-events:none;z-index:45;font-size:22px;font-weight:bold;letter-spacing:4px;text-shadow:0 0 18px currentColor;transition:opacity .4s,transform .4s;white-space:nowrap}
+#toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+#achiev{position:fixed;bottom:26px;left:50%;transform:translate(-50%,18px);background:rgba(0,0,0,.88);border:2px solid #ffdd00;padding:10px 24px;font-size:13px;letter-spacing:2px;z-index:50;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .38s,transform .38s}
+#achiev.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+/* menus */
+.scr{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;background:radial-gradient(ellipse at 50% 30%,rgba(40,0,0,.55),rgba(0,0,0,.9));pointer-events:all;overflow-y:auto;overflow-x:hidden;padding:24px}
+/* auto margins centre the menu but still let tall menus scroll from the top */
+.scr>:first-child{margin-top:auto}.scr>:last-child{margin-bottom:auto}
+.scr.on{display:flex}
+.title{font-size:62px;font-weight:900;color:#ff2200;letter-spacing:8px;text-shadow:0 0 40px #ff2200;animation:pulse 2s infinite;text-align:center}
+@keyframes pulse{0%,100%{text-shadow:0 0 30px #ff2200}50%{text-shadow:0 0 80px #ff2200,0 0 140px #ff000055}}
+.sub{font-size:14px;color:#ff6644;letter-spacing:4px;margin-bottom:34px;text-align:center}
+.btn{background:transparent;border:2px solid #ff2200;color:#ff2200;font-family:'Courier New',monospace;font-size:15px;letter-spacing:3px;padding:11px 40px;margin:6px;cursor:pointer;transition:all .18s;text-transform:uppercase;min-width:280px}
+.btn:hover:not(:disabled){background:#ff220022;color:#fff;box-shadow:0 0 20px #ff2200}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.sm{min-width:0;padding:7px 18px;font-size:12px}
+.btn.g{border-color:#44ff88;color:#44ff88}.btn.g:hover:not(:disabled){background:#44ff8822;box-shadow:0 0 20px #44ff88}
+.help{margin-top:24px;color:#666;font-size:11px;letter-spacing:1px;text-align:center;line-height:1.9}
+.lvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;width:min(1100px,100%);margin:18px 0}
+.lv{border:2px solid #333;padding:14px;cursor:pointer;background:rgba(0,0,0,.5);transition:all .15s;position:relative}
+.lv:hover{border-color:#ff8800;background:rgba(255,136,0,.1)}
+.lv.locked{opacity:.35;cursor:not-allowed}
+.lv.sel{border-color:#44ff88;background:rgba(68,255,136,.1)}
+.lv .ic{font-size:28px}.lv .nm{font-size:14px;color:#ffaa66;margin-top:4px;font-weight:bold}.lv .ds{font-size:10px;color:#888;margin-top:3px}
+.lv .no{position:absolute;top:8px;right:10px;font-size:11px;color:#666}
+.tabs{display:flex;gap:8px;margin:6px 0 4px}
+.tabs .btn{min-width:0;padding:7px 20px;font-size:12px}
+.tabs .btn.on{background:#ff220033;color:#fff}
+.field{background:#111;border:1px solid #555;color:#fff;font-family:'Courier New';font-size:15px;padding:9px 12px;width:min(520px,86vw);margin:6px}
+.box{background:rgba(0,0,0,.65);border:1px solid rgba(255,34,0,.4);padding:18px 22px;width:min(640px,92vw);margin:8px 0}
+.code{font-size:40px;letter-spacing:10px;color:#44ff88;font-weight:900;text-align:center;margin:6px 0}
+.roster div{padding:5px 0;font-size:14px;border-bottom:1px solid #222}
+.err{color:#ff6655;font-size:13px;margin-top:8px;min-height:18px;text-align:center;max-width:620px}
+.note{color:#888;font-size:11px;line-height:1.7;margin-top:8px}
+#shopO{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.93);display:none;overflow-y:auto;pointer-events:all}
+#shopO.on{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.card{border:1px solid rgba(255,34,0,.4);padding:12px;background:rgba(0,0,0,.55)}
+.card .nm{font-size:14px;font-weight:bold;margin-bottom:6px}
+.card .st{font-size:10px;color:#aaa;line-height:1.8}
+.buy{margin-top:8px;width:100%;padding:7px;background:transparent;font-family:'Courier New';font-size:12px;cursor:pointer;border:1px solid #ff2200;color:#ff2200}
+.buy:disabled{border-color:#444;color:#666;cursor:not-allowed}
+.chip{padding:4px 12px;font-size:11px;border:1px solid #444;color:#aaa;background:transparent;font-family:'Courier New';cursor:pointer}
+.chip.on{border-color:#ff8800;color:#ff8800}
+.gun-preview{width:100%;height:100px;margin-bottom:8px;background:radial-gradient(ellipse at center,rgba(255,255,255,.07),transparent 70%);border:1px solid rgba(255,255,255,.08)}
+#settingsO{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;border:2px solid #ff2200;padding:24px;min-width:420px;z-index:30;display:none;pointer-events:all}
+#settingsO.on{display:block}
+#settingsO .row{display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:13px;color:#ccc;line-height:2.6}
+#settingsO select,#settingsO input[type=text]{background:#000;color:#fff;border:1px solid #555;font-family:'Courier New';padding:3px 6px}
+#loadO{position:fixed;inset:0;z-index:60;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#ff6644;letter-spacing:3px}
+#loadO.h{display:none}
+.stats{color:#ccc;line-height:2.1;font-size:13px;letter-spacing:2px;text-align:center;margin:10px 0 20px}
+@media (max-width:1100px){
+  .panel{padding:5px 9px}.lbl{font-size:8px;letter-spacing:1px}.val{font-size:16px}
+  .topcenter .val{font-size:14px}.topcenter>.panel>div:first-child{gap:12px!important}
+  #mm{width:110px;height:110px}#bossbar{width:280px;top:96px}
+  .hp{min-width:150px}.weaponhud{min-width:160px}#team{bottom:118px;min-width:150px}
+  .title{font-size:44px}.btn{min-width:220px;padding:9px 26px}
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<canvas id="ov"></canvas>
+
+<div id="ui" class="off">
+  <div id="dmgV"></div><div id="healV"></div><div id="lowHPV"></div><div id="flashV"></div>
+  <div id="wave"></div>
+  <div class="topleft panel hudp">
+    <div class="lbl" id="lvlN">Level 1</div>
+    <div class="val" id="mapN" style="font-size:13px;color:#88ccff">City Streets</div>
+    <canvas id="mm" width="160" height="160"></canvas>
+  </div>
+  <div class="topcenter hudp">
+    <div class="panel">
+      <div style="display:flex;gap:22px;align-items:center">
+        <div><div class="lbl">Wave</div><div class="val" id="wv" style="color:#ff8800">1</div></div>
+        <div><div class="lbl">Zombies</div><div class="val" id="zv" style="color:#ff4444">0</div></div>
+        <div><div class="lbl">Score</div><div class="val" id="sv" style="color:#ffdd00;font-size:16px">0</div></div>
+        <div><div class="lbl">Kills</div><div class="val" id="kv" style="color:#ff6644">0</div></div>
+      </div>
+      <div style="margin-top:5px"><div class="lbl">XP · Lv <span id="lv">1</span> · <span id="nextT"></span></div>
+      <div class="bar" style="width:200px;margin:3px auto 0"><div class="bfill" id="xb" style="background:#aa44ff;width:0%"></div></div></div>
+    </div>
+    <div id="pus"></div>
+  </div>
+  <div id="bossbar" class="panel hudp"><div class="lbl" id="bossN" style="color:#ff5533">BOSS</div><div class="bar"><div class="bfill" id="bossF" style="background:#ff2200;width:100%"></div></div></div>
+  <div class="topright hudp">
+    <div class="panel"><div class="lbl">Money · F = Shop</div><div class="val" id="mv" style="color:#ffdd00">$0</div></div>
+    <div id="feed"></div>
+  </div>
+  <div id="team" class="panel hudp"><div class="lbl">Squad</div><div id="teamL"></div></div>
+  <div class="hp panel hudp">
+    <div class="lbl">Health</div><div class="val" id="hv" style="color:#ff4444">100</div>
+    <div class="bar"><div class="bfill" id="hb" style="background:#ff4444;width:100%"></div></div>
+    <div class="lbl" style="margin-top:5px">Armor</div><div class="val" id="av" style="color:#4488ff;font-size:15px">0</div>
+    <div class="bar"><div class="bfill" id="ab" style="background:#4488ff;width:0%"></div></div>
+    <div class="bar" style="height:3px;margin-top:6px"><div class="bfill" id="sf" style="background:#00ff88;width:100%;transition:none"></div></div>
+  </div>
+  <div id="reloadB" class="panel hudp"><div class="lbl">Reloading…</div><div class="rtrack"><div class="rfill" id="rf"></div></div></div>
+  <div class="weaponhud panel hudp">
+    <div class="lbl">Weapon</div><div class="val" id="wn" style="color:#88ffcc;font-size:14px">Pistol</div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;align-items:baseline;margin-top:2px">
+      <span class="lbl">💣 <span id="gn">2</span></span><span class="lbl">Ammo</span><span class="val" id="ammo" style="font-size:20px">15/120</span></div>
+    <div class="slots" id="slots"></div>
+  </div>
+  <div id="downO"><div class="wt" style="font-size:38px">YOU ARE DOWN</div><div class="ws" id="downT">Respawning in 10s</div></div>
+</div>
+
+<!-- ── MENUS ── -->
+<div id="mainM" class="scr">
+  <div class="title">DEAD ZONE</div>
+  <div class="sub">Zombie Survival · FPS · 14 Levels</div>
+  <button class="btn" onclick="openLevels('campaign')">▶ Campaign</button>
+  <button class="btn" onclick="openLevels('endless')">♾ Endless Mode</button>
+  <button class="btn g" onclick="openMP()">👥 Multiplayer</button>
+  <button class="btn" onclick="backToLobby()">🏠 Lobby</button>
+  <button class="btn" onclick="openSettings()">⚙ Settings</button>
+  <div class="help" id="helpT"></div>
+</div>
+
+<div id="levelM" class="scr">
+  <div class="title" style="font-size:38px" id="levelTitle">Campaign</div>
+  <div class="sub" id="levelSub" style="margin-bottom:6px">Clear every wave to unlock the next level</div>
+  <div class="lvgrid" id="lvgrid"></div>
+  <button class="btn sm" onclick="showScreen('mainM')">◀ Back</button>
+</div>
+
+<div id="mpM" class="scr">
+  <div class="title" style="font-size:38px">Multiplayer</div>
+  <div class="sub" style="margin-bottom:14px">Co-op for up to 4 players · share a link</div>
+  <div class="box" style="text-align:center">
+    <div class="lbl" style="margin-bottom:4px">Your name</div>
+    <input class="field" id="mpName" maxlength="16" style="width:260px;text-align:center">
+    <div style="margin-top:10px"><button class="btn g" onclick="hostGame()">🎮 Host a Game</button></div>
+    <div class="lbl" style="margin:14px 0 4px">— or join a friend —</div>
+    <input class="field" id="joinIn" placeholder="Paste invite link or room code">
+    <div><button class="btn" onclick="joinGame()">➜ Join Game</button></div>
+    <div class="err" id="mpErr"></div>
+    <div class="note">How it works: the host's browser runs the game and friends connect directly to it (needs internet).
+      The invite link opens straight into the game if this folder is hosted online (e.g. GitHub Pages / Netlify).
+      If you're both running your own copy, just send the 6-letter code and paste it above.</div>
+  </div>
+  <button class="btn sm" onclick="showScreen('mainM')">◀ Back</button>
+</div>
+
+<div id="hostM" class="scr">
+  <div class="title" style="font-size:34px">Your Room</div>
+  <div class="box" style="text-align:center">
+    <div class="lbl">Room code</div>
+    <div class="code" id="roomCode">------</div>
+    <input class="field" id="roomLink" readonly onclick="this.select()">
+    <div><button class="btn sm g" onclick="copyLink()">📋 Copy invite link</button> <button class="btn sm" onclick="copyCode()">Copy code</button></div>
+    <div class="lbl" style="margin-top:14px">Players</div>
+    <div class="roster" id="hostRoster"></div>
+  </div>
+  <div class="box" style="text-align:center">
+    <div class="tabs" style="justify-content:center"><button class="btn on" id="hmC" onclick="setHostMode('campaign')">Campaign</button><button class="btn" id="hmE" onclick="setHostMode('endless')">Endless</button></div>
+    <select class="field" id="hostLevel" style="width:320px"></select>
+    <div><button class="btn g" onclick="hostStart()">▶ Start Match</button></div>
+  </div>
+  <button class="btn sm" onclick="leaveMP()">✕ Close Room</button>
+</div>
+
+<div id="clientM" class="scr">
+  <div class="title" style="font-size:34px">Joined!</div>
+  <div class="box" style="text-align:center">
+    <div class="sub" style="margin-bottom:10px">Waiting for the host to start the match…</div>
+    <div class="lbl">Players</div>
+    <div class="roster" id="clientRoster"></div>
+  </div>
+  <button class="btn sm" onclick="leaveMP()">✕ Leave</button>
+</div>
+
+<div id="pauseO" class="scr">
+  <div class="title" style="font-size:38px;margin-bottom:6px">Paused</div>
+  <div class="sub" id="pauseSub"></div>
+  <button class="btn" onclick="resumeGame()">▶ Resume</button>
+  <button class="btn" onclick="openShop()">🛒 Shop</button>
+  <button class="btn" onclick="openSettings()">⚙ Settings</button>
+  <button class="btn" onclick="quitToMenu()">✕ Quit to Menu</button>
+</div>
+
+<div id="levelO" class="scr">
+  <div class="title" style="font-size:46px;color:#44ff88;text-shadow:0 0 40px #44ff88" id="lvlDoneT">LEVEL COMPLETE</div>
+  <div class="stats" id="lvlStats"></div>
+  <button class="btn g" id="nextBtn" onclick="nextLevel()">▶ Next Level</button>
+  <div class="sub" id="waitHost" style="display:none">Waiting for the host…</div>
+  <button class="btn" onclick="quitToMenu()">✕ Main Menu</button>
+</div>
+
+<div id="gameoverO" class="scr">
+  <div class="title" style="font-size:50px;color:#ff0000;margin-bottom:6px" id="goT">YOU DIED</div>
+  <div class="stats" id="goS"></div>
+  <button class="btn" id="retryBtn" onclick="retryLevel()">↺ Retry Level</button>
+  <button class="btn" onclick="quitToMenu()">✕ Main Menu</button>
+  <button class="btn" onclick="backToLobby()">🏠 Back to Lobby</button>
+</div>
+
+<div id="shopO">
+  <div style="max-width:1150px;margin:0 auto;padding:24px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:14px;flex-wrap:wrap">
+      <div style="font-size:28px;color:#ff2200;font-weight:900;letter-spacing:4px">SHOP</div>
+      <div id="saleTag" style="color:#ff66cc;font-weight:bold;display:none">🏷️ FIRE SALE · 50% OFF</div>
+      <div id="liveTag" style="color:#ff6655;font-size:12px;display:none">⚠ Multiplayer: the game keeps running!</div>
+      <div style="font-size:22px;color:#ffdd00;font-weight:bold" id="shopMoney">$0</div>
+      <button class="btn sm" onclick="closeShop()">✕ Close [F]</button>
+    </div>
+    <div class="tabs" id="shopTabs"></div>
+    <div id="shopC" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<div id="settingsO">
+  <div style="font-size:20px;color:#ff2200;margin-bottom:12px;letter-spacing:3px">SETTINGS</div>
+  <div class="row"><span>Mouse sensitivity</span><input type="range" id="sSens" min="1" max="20"></div>
+  <div class="row"><span>Scope sensitivity</span><input type="range" id="sScope" min="3" max="20"></div>
+  <div class="row"><span>Volume</span><input type="range" id="sVol" min="0" max="100"></div>
+  <div class="row"><span>Field of view</span><input type="range" id="sFov" min="65" max="110"></div>
+  <div class="row"><span>Graphics</span><select id="sQ"><option value="low">Low (fast)</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+  <div class="row"><span>Screen shake</span><select id="sShake"><option value="off">Off</option><option value="low">Low</option><option value="normal">Normal</option></select></div>
+  <div class="row"><span>Invert mouse Y</span><input type="checkbox" id="sInv"></div>
+  <div class="row"><span>Show FPS</span><input type="checkbox" id="sFps"></div>
+  <div class="row"><span>Player name</span><input type="text" id="sName" maxlength="16"></div>
+  <button class="btn" style="margin:14px 0 0;width:100%;min-width:0" onclick="closeSettings()">Save &amp; Close</button>
+</div>
+
+<div id="achiev"></div>
+<div id="toast"></div>
+<div id="loadO"><div style="font-size:42px;font-weight:900;color:#ff2200;letter-spacing:8px">DEAD ZONE</div><div id="loadT">Loading 3D engine…</div></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<!-- Lobby bridge: lets the game read its launch loadout and report earnings back -->
+<script src="lobby/bridge.js?v=2.3"></script>
+<script src="game/data.js?v=2.3"></script>
+<script src="game/maps.js?v=2.3"></script>
+<script src="game/nav.js?v=2.3"></script>
+<script src="game/gfx.js?v=2.3"></script>
+<script src="weapon_viewmodel.js?v=2.3"></script>
+<script src="game/net.js?v=2.3"></script>
+<script src="game/core.js?v=2.3"></script>
+<script src="game/sim.js?v=2.3"></script>
+<script src="game/ui.js?v=2.3"></script>
+</body>
+</html>
